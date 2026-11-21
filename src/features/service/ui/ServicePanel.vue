@@ -2,7 +2,11 @@
 import type { Game, Command } from "../../../shared/types";
 import { recipes } from "../../../shared/catalog";
 import { servingQuality, servicePair } from "../lib/freshness";
-defineProps<{ game: Game }>();
+defineProps<{
+  game: Game;
+  /** Order the lesson is teaching; surfaced so the match is explicit. */
+  targetId?: number | null;
+}>();
 defineEmits<{ command: [cmd: Command] }>();
 </script>
 <template>
@@ -22,6 +26,12 @@ defineEmits<{ command: [cmd: Command] }>();
           ><small
             >品质 {{ servingQuality(game, d) }} ·
             {{ d.stage === "plated" ? "已装盘" : "待装盘" }}</small
+          ><small v-if="d.orderId" class="dish-owner">
+            为 #{{ String(d.orderId).padStart(3, "0") }} 准备<template
+              v-if="targetId === d.orderId"
+            >
+              · 教学目标</template
+            ></small
           >
         </div>
         <button
@@ -49,6 +59,15 @@ defineEmits<{ command: [cmd: Command] }>();
     </div>
     <div class="delivery-target">
       上菜目标：<b>{{ servicePair(game).order?.guest || "尚未选择订单" }}</b>
+      <span
+        v-if="
+          servicePair(game).dish &&
+          servicePair(game).order &&
+          servicePair(game).dish?.recipe !== servicePair(game).order?.recipe
+        "
+        class="mismatch"
+        >菜单不一致</span
+      >
     </div>
     <button class="serve-button" @click="$emit('command', { type: 'serve' })">
       上菜 <span>↗</span>

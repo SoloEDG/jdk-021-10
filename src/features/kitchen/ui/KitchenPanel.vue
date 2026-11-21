@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { Game, Command } from "../../../shared/types";
 import StoveCard from "./StoveCard.vue";
-defineProps<{ game: Game }>();
+defineProps<{
+  game: Game;
+  /** Stoves the lesson would like to demonstrate on (a hint, not a lock). */
+  reserved?: number[];
+}>();
 defineEmits<{ command: [cmd: Command] }>();
 </script>
 <template>
@@ -21,6 +25,7 @@ defineEmits<{ command: [cmd: Command] }>();
         :key="s.id"
         :stove="s"
         :game="game"
+        :reserved="reserved?.includes(s.id)"
         @command="(cmd) => $emit('command', cmd)"
       />
     </div>

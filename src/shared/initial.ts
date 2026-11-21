@@ -6,6 +6,7 @@ export function createGame(best = 0): Game {
     running: false,
     ended: false,
     nextId: 4,
+    nextEventId: 1,
     selectedOrder: null,
     selectedDish: null,
     orders: [
@@ -43,6 +44,7 @@ export function createGame(best = 0): Game {
     ],
     dishes: [],
     entries: [],
+    events: [],
     combo: 0,
     served: 0,
     missed: 0,

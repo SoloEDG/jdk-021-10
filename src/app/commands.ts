@@ -17,7 +17,7 @@ export function dispatch(g: Game, c: Command) {
         g.selectedOrder = c.id;
       break;
     case "prepare":
-      prepare(g, c.recipe);
+      prepare(g, c.recipe, c.orderId ?? null);
       break;
     case "restock":
       restock(g, c.ingredient);

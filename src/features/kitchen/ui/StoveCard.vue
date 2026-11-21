@@ -2,15 +2,24 @@
 import type { Game, Stove, Command } from "../../../shared/types";
 import { recipes } from "../../../shared/catalog";
 import { heatLabel } from "../lib/heat";
-defineProps<{ game: Game; stove: Stove }>();
+defineProps<{
+  game: Game;
+  stove: Stove;
+  /** The lesson would like to demonstrate here. A hint, never a lock. */
+  reserved?: boolean;
+}>();
 defineEmits<{ command: [cmd: Command] }>();
 </script>
 <template>
-  <article class="stove" :class="{ cooking: stove.portion }">
+  <article
+    class="stove"
+    :class="{ cooking: stove.portion, reserved }"
+  >
     <div class="stove-head">
       <b>{{ stove.kind === "pan" ? "煎锅" : "汤锅" }} 0{{ stove.id }}</b
       ><span class="status-dot">{{ heatLabel(game, stove) }}</span>
     </div>
+    <div v-if="reserved" class="reserve-flag">教学演示位</div>
     <div class="burner">
       <div class="pan-shape">
         <span>{{
@@ -21,6 +30,9 @@ defineEmits<{ command: [cmd: Command] }>();
     </div>
     <template v-if="stove.portion"
       ><strong>{{ recipes[stove.portion.recipe].name }}</strong>
+      <p v-if="stove.portion.orderId" class="stove-order">
+        为 #{{ String(stove.portion.orderId).padStart(3, "0") }} 烹饪
+      </p>
       <p class="timer">
         {{ (game.time - stove.started).toFixed(1)
         }}<small> / {{ recipes[stove.portion.recipe].target }} 秒</small>
@@ -58,7 +70,11 @@ defineEmits<{ command: [cmd: Command] }>();
             $emit('command', { type: 'cook', portion: p.id, stove: stove.id })
           "
         >
-          {{ recipes[p.recipe].icon }} #{{ p.id }} 下锅</button
+          {{ recipes[p.recipe].icon }} #{{ p.id }}
+          <template v-if="p.orderId"
+            >→ #{{ String(p.orderId).padStart(3, "0") }}</template
+          >
+          下锅</button
         ><small
           v-if="
             !game.portions.some((p) => recipes[p.recipe].station === stove.kind)

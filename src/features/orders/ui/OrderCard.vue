@@ -2,7 +2,12 @@
 import type { Order, Game } from "../../../shared/types";
 import { recipes } from "../../../shared/catalog";
 import { patience } from "../lib/patience";
-defineProps<{ order: Order; game: Game }>();
+defineProps<{
+  order: Order;
+  game: Game;
+  /** Highlighted by the lesson as the order currently being taught. */
+  lessonTarget?: boolean;
+}>();
 defineEmits<{ accept: [id: number]; select: [id: number] }>();
 </script>
 <template>
@@ -11,11 +16,14 @@ defineEmits<{ accept: [id: number]; select: [id: number] }>();
     :class="{
       selected: game.selectedOrder === order.id,
       urgent: patience(game, order) < 0.25,
+      lesson: lessonTarget || order.tutorial,
     }"
   >
     <div class="ticket-top">
       <b>#{{ String(order.id).padStart(3, "0") }}</b
-      ><span>{{ Math.ceil(order.deadline - game.time) }}s</span>
+      ><span v-if="order.tutorial || lessonTarget" class="lesson-tag"
+        >教学</span
+      ><span v-else>{{ Math.ceil(order.deadline - game.time) }}s</span>
     </div>
     <div class="ticket-dish">
       <span>{{ recipes[order.recipe].icon }}</span

@@ -1,15 +1,35 @@
 import type { Game, RecipeId, Ingredient } from "../../../shared/types";
 import { recipes, ingredients } from "../../../shared/catalog";
+import { recordEvent } from "../../../shared/events";
 import { preparationIssue } from "../lib/availability";
-export function prepare(g: Game, r: RecipeId) {
+export function prepare(g: Game, r: RecipeId, orderId: number | null = null) {
   const issue = preparationIssue(g, r);
   if (issue) {
     g.notice = issue;
     return;
   }
   g.stock[recipes[r].ingredient]--;
-  g.portions.push({ id: g.nextId++, recipe: r, preparedAt: g.time });
-  g.notice = `${recipes[r].name} 备料完成，可送入灶台`;
+  // A selected accepted order of the same dish becomes the destination of this
+  // portion. The link keeps the kitchen honest: a steak prepped for another
+  // guest is not silently counted as prep for this guest.
+  const target = g.orders.find(
+    (o) => o.id === orderId && o.status === "accepted" && o.recipe === r,
+  );
+  const portion = {
+    id: g.nextId++,
+    recipe: r,
+    preparedAt: g.time,
+    orderId: target?.id ?? null,
+  };
+  g.portions.push(portion);
+  recordEvent(g, "prepare", {
+    portionId: portion.id,
+    recipe: r,
+    orderId: portion.orderId,
+  });
+  g.notice = target
+    ? `${recipes[r].name} 备料完成，为 ${target.guest} 准备，可送入灶台`
+    : `${recipes[r].name} 备料完成，可送入灶台`;
 }
 export function restock(g: Game, i: Ingredient) {
   if (g.stock[i] >= 12) {

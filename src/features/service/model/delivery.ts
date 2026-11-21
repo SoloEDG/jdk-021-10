@@ -1,5 +1,6 @@
 import type { Game } from "../../../shared/types";
 import { recipes } from "../../../shared/catalog";
+import { recordEvent } from "../../../shared/events";
 import { servingQuality, servicePair } from "../lib/freshness";
 export function deliver(g: Game) {
   const { dish, order } = servicePair(g);
@@ -10,18 +11,33 @@ export function deliver(g: Game) {
   if (dish.recipe !== order.recipe) {
     order.deadline = Math.max(g.time, order.deadline - 10);
     g.combo = 0;
+    recordEvent(g, "serve-rejected", {
+      orderId: order.id,
+      dishId: dish.id,
+      recipe: dish.recipe,
+      reason: "wrong-dish",
+    });
     g.notice = "上错菜！客人耐心减少10秒，菜品仍留在出餐台";
     return;
   }
   const q = servingQuality(g, dish);
   if (q < 30) {
     order.deadline = Math.max(g.time, order.deadline - 8);
+    recordEvent(g, "serve-rejected", {
+      orderId: order.id,
+      dishId: dish.id,
+      recipe: dish.recipe,
+      quality: q,
+      reason: "low-quality",
+    });
     g.notice = "品质低于30，客人拒收，耐心减少8秒";
     return;
   }
   g.combo++;
   g.served++;
   order.status = "served";
+  order.servedAt = g.time;
+  order.servedQuality = q;
   const amount =
     Math.round((recipes[dish.recipe].price * q) / 100) +
     Math.min(10, (g.combo - 1) * 2);
@@ -31,6 +47,15 @@ export function deliver(g: Game) {
     label: `${order.guest} · ${recipes[dish.recipe].name}`,
     amount,
     kind: "sale",
+    orderId: order.id,
+    tutorial: dish.tutorial,
+  });
+  recordEvent(g, "serve", {
+    orderId: order.id,
+    dishId: dish.id,
+    recipe: dish.recipe,
+    quality: q,
+    guest: order.guest,
   });
   g.dishes = g.dishes.filter((d) => d.id !== dish.id);
   g.selectedDish = null;
